@@ -1,31 +1,18 @@
-const puppeteer               = require("puppeteer");
+const puppeteer               = require("puppeteer-core");
+const chromium                = require("@sparticuz/chromium");
 const { generateInvoiceHTML } = require("./Invoicetemplate");
 const Tax                     = require("../models/Tax");
 
-/**
- * @param {Object} order
- * @param {Object} opts
- * @param {string} opts.logoPath
- * @param {string} opts.shopName
- * @returns {Promise<Buffer>} PDF as a Buffer
- */
 async function generateInvoicePDF(order, opts = {}) {
-
-    // Fetch active taxes and pass them into the template
     const taxes = await Tax.find({ isActive: true });
 
-    const html = generateInvoiceHTML(order, {
-        ...opts,
-        taxes,   // ← injects per-tax breakdown rows
-    });
+    const html = generateInvoiceHTML(order, { ...opts, taxes });
 
     const browser = await puppeteer.launch({
-        headless: "new",
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-        ],
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
     });
 
     try {
